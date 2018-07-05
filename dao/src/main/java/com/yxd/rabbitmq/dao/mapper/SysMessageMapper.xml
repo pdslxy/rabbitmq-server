@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yxd.rabbitmq.dao.mapper.SysMessageMapper">
+    <resultMap type="com.yxd.rabbitmq.model.entity.SysMessage" id="sysMessageResultMap">
+        <result property="id" column="id"/>
+        <result property="msgTypeCode" column="msg_type_code"/>
+        <result property="messageContent" column="message_content"/>
+        <result property="createDate" column="create_date"/>
+        <result property="sendUserId" column="send_user_id"/>
+        <result property="sendUserName" column="send_user_name"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="table_columns">
+		id,
+		msg_type_code,
+		message_content,
+		send_user_id,
+		send_user_name,
+		remark
+    </sql>
+    <sql id="entity_properties">
+		#{id,jdbcType=VARCHAR},
+		#{msgTypeCode,jdbcType=VARCHAR},
+		#{messageContent,jdbcType=VARCHAR},
+		#{sendUserId,jdbcType=VARCHAR},
+		#{sendUserName,jdbcType=VARCHAR},
+		#{remark,jdbcType=VARCHAR}
+	</sql>
+    <sql id="batch_entity_properties">
+		#{item.id,jdbcType=VARCHAR},
+		#{item.msgTypeCode,jdbcType=VARCHAR},
+		#{item.messageContent,jdbcType=VARCHAR},
+		#{item.sendUserId,jdbcType=VARCHAR},
+		#{item.sendUserName,jdbcType=VARCHAR},
+		#{item.remark,jdbcType=VARCHAR}
+	</sql>
+
+    <sql id="table_columns_no_id">
+		msg_type_code,
+		message_content,
+		send_user_id,
+		send_user_name,
+		remark
+    </sql>
+    <sql id="entity_properties_no_id">
+		#{msgTypeCode,jdbcType=VARCHAR},
+		#{messageContent,jdbcType=VARCHAR},
+		#{sendUserId,jdbcType=VARCHAR},
+		#{sendUserName,jdbcType=VARCHAR},
+		#{remark,jdbcType=VARCHAR}
+	</sql>
+    <sql id="batch_entity_properties_no_id">
+		#{item.msgTypeCode,jdbcType=VARCHAR},
+		#{item.messageContent,jdbcType=VARCHAR},
+		#{item.sendUserId,jdbcType=VARCHAR},
+		#{item.sendUserName,jdbcType=VARCHAR},
+		#{item.remark,jdbcType=VARCHAR}
+	</sql>
+
+    <!-- 适用于主键自增类型 -->
+    <insert id="insert" parameterType="com.yxd.rabbitmq.model.entity.SysMessage">
+        <selectKey keyProperty="id" resultType="String" order="BEFORE">
+            SELECT 'MSG' || LPAD(MSG_SEQ.NEXTVAL, 21, '0') FROM DUAL
+        </selectKey>
+        insert into sys_message(
+        <include refid="table_columns"/>
+        )
+        values (
+        <include refid="entity_properties"/>
+        )
+    </insert>
+
+
+    <!--根据主键删除 -->
+    <delete id="deleteById">
+		delete from sys_message
+		where id = #{id}
+	</delete>
+
+    <!-- 根据ID批量删除 -->
+    <delete id="deleteByIds">
+        delete from sys_message
+        where id in
+        <foreach item="item" collection="array" open="(" separator="," close=")">
+            '${item}'
+        </foreach>
+    </delete>
+
+    <update id="update" parameterType="com.yxd.rabbitmq.model.entity.SysMessage">
+        update sys_message
+        <trim prefix="set" suffixOverrides=",">
+            <if test="msgTypeCode != null and msgTypeCode != ''">msg_type_code = #{msgTypeCode},</if>
+            <if test="messageContent != null and messageContent != ''">message_content = #{messageContent},</if>
+            <if test="createDate != null">create_date = #{createDate},</if>
+            <if test="sendUserId != null and sendUserId != ''">send_user_id = #{sendUserId},</if>
+            <if test="sendUserName != null and sendUserName != ''">send_user_name = #{sendUserName},</if>
+            <if test="remark != null and remark != ''">remark = #{remark},</if>
+        </trim>
+        <where>id = #{id}</where>
+    </update>
+
+    <select id="findById" resultMap="sysMessageResultMap" parameterType="String">
+        select
+        <include refid="table_columns"/>
+        from sys_message
+        where id = #{id}
+    </select>
+
+    <sql id="page_where">
+        <trim prefix="where" prefixOverrides="and | or ">
+            <if test="msgTypeCode != null and msgTypeCode != ''">and msg_type_code = #{msgTypeCode}</if>
+            <if test="messageContent != null and messageContent != ''">and message_content = #{messageContent}</if>
+            <if test="createDate != null and createDate != ''">and create_date = #{createDate}</if>
+            <if test="sendUserId != null and sendUserId != ''">and send_user_id = #{sendUserId}</if>
+            <if test="sendUserName != null and sendUserName != ''">and send_user_name = #{sendUserName}</if>
+            <if test="remark != null and remark != ''">and remark = #{remark}</if>
+        </trim>
+    </sql>
+
+    <select id="findAll" resultMap="sysMessageResultMap" parameterType="com.yxd.rabbitmq.model.entity.SysMessage">
+        select
+        <include refid="table_columns"/>
+        from sys_message
+        <include refid="page_where"/>
+    </select>
+
+    <!-- 其他自定义SQL -->
+
+    <select id="findRoleIds" resultType="String" parameterType="String">
+        SELECT DISTINCT
+        SUR.ROLE_ID roleId
+        FROM
+        SYS_USER su
+        INNER JOIN SYS_USER_ROLE sur ON (SU."ID" = SUR.USER_ID)
+        INNER JOIN SYS_ROLE_MSG_TYPE_SUBSCRIBED srmts ON (SUR.ROLE_ID = srmts. ROLE_ID)
+        INNER JOIN SYS_MESSAGE_TYPE smt ON (
+        smt. ID = srmts.msg_type_id
+        AND smt.MSG_TYPE_CODE = #{msgTypeCode}
+        )
+        WHERE
+        SU.ORG_ID = #{receiveOrgId}
+    </select>
+
+
+    <select id="findMessageByOrgIdAndRoleIdsAndReadFlag" resultType="com.yxd.rabbitmq.model.entity.SysMessage">
+        SELECT DISTINCT
+        smr.MESSAGE_ID ID,
+        SM.MESSAGE_CONTENT messageContent
+        FROM
+        SYS_MESSAGE_RECEIVER smr
+        INNER JOIN SYS_MESSAGE sm ON (SM."ID" = SMR.MESSAGE_ID)
+        WHERE
+        SMR.READ_FLAG = #{readFlag}
+        AND SMR.RECEIVE_ORG_ID = #{orgId}
+        AND SMR.RECEIVE_ROLE_ID IN
+        <foreach item="roleId" collection="roleIdArr" open="(" separator="," close=")">
+            '${roleId}'
+        </foreach>
+    </select>
+</mapper>

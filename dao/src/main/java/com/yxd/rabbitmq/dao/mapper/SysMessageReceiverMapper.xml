@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yxd.rabbitmq.dao.mapper.SysMessageReceiverMapper">
+    <resultMap type="com.yxd.rabbitmq.model.entity.SysMessageReceiver" id="sysMessageReceiverResultMap">
+        <result property="messageId" column="message_id"/>
+        <result property="receiveUserId" column="receive_user_id"/>
+        <result property="receiveOrgId" column="receive_org_id"/>
+        <result property="receiveRoleId" column="receive_role_id"/>
+        <result property="readFlag" column="read_flag"/>
+    </resultMap>
+
+    <sql id="table_columns">
+		message_id,
+		receive_user_id,
+		receive_org_id,
+		receive_role_id,
+		read_flag
+    </sql>
+    <sql id="entity_properties">
+		#{messageId,jdbcType=VARCHAR},
+		#{receiveUserId,jdbcType=VARCHAR},
+		#{receiveOrgId,jdbcType=VARCHAR},
+		#{receiveRoleId,jdbcType=VARCHAR},
+		#{readFlag,jdbcType=CHAR}
+	</sql>
+    <sql id="batch_entity_properties">
+		#{item.messageId,jdbcType=VARCHAR},
+		#{item.receiveUserId,jdbcType=VARCHAR},
+		#{item.receiveOrgId,jdbcType=VARCHAR},
+		#{item.receiveRoleId,jdbcType=VARCHAR},
+		#{item.readFlag,jdbcType=CHAR}
+	</sql>
+
+    <sql id="table_columns_no_id">
+		receive_user_id,
+		receive_org_id,
+		receive_role_id,
+		read_flag
+    </sql>
+    <sql id="entity_properties_no_id">
+		#{receiveUserId,jdbcType=VARCHAR},
+		#{receiveOrgId,jdbcType=VARCHAR},
+		#{receiveRoleId,jdbcType=VARCHAR},
+		#{readFlag,jdbcType=CHAR}
+	</sql>
+    <sql id="batch_entity_properties_no_id">
+		#{item.receiveUserId,jdbcType=VARCHAR},
+		#{item.receiveOrgId,jdbcType=VARCHAR},
+		#{item.receiveRoleId,jdbcType=VARCHAR},
+		#{item.readFlag,jdbcType=CHAR}
+	</sql>
+
+    <!-- 适用于主键自增类型 -->
+    <insert id="insert" parameterType="com.yxd.rabbitmq.model.entity.SysMessageReceiver">
+        insert into sys_message_receiver(
+        <include refid="table_columns"/>
+        )
+        values (
+        <include refid="entity_properties"/>
+        )
+    </insert>
+
+    <!-- 批量添加 适用于主键自增类型  不支持返回主键-->
+    <insert id="batchInsert" parameterType="java.util.List">
+        insert into sys_message_receiver(
+        <include refid="table_columns"/>
+        )
+        values
+        <foreach item="item" collection="list" separator=",">
+            (
+            <include refid="entity_properties"/>
+            )
+        </foreach>
+    </insert>
+
+    <!--根据主键删除 -->
+    <delete id="deleteById">
+		delete from sys_message_receiver
+		where id = #{id}
+	</delete>
+
+    <!-- 根据ID批量删除 -->
+    <delete id="deleteByIds">
+        delete from sys_message_receiver
+        where id in
+        <foreach item="item" collection="array" open="(" separator="," close=")">
+            '${item}'
+        </foreach>
+    </delete>
+
+    <update id="update" parameterType="com.yxd.rabbitmq.model.entity.SysMessageReceiver">
+        update sys_message_receiver
+        <trim prefix="set" suffixOverrides=",">
+            <if test="receiveUserId != null and receiveUserId != ''">receive_user_id = #{receiveUserId},</if>
+            <if test="receiveOrgId != null and receiveOrgId != ''">receive_org_id = #{receiveOrgId},</if>
+            <if test="receiveRoleId != null and receiveRoleId != ''">receive_role_id = #{receiveRoleId},</if>
+            <if test="readFlag != null and readFlag != ''">read_flag = #{readFlag},</if>
+        </trim>
+        <where>id = #{id}</where>
+    </update>
+
+    <select id="findById" resultMap="sysMessageReceiverResultMap" parameterType="String">
+        select
+        <include refid="table_columns"/>
+        from sys_message_receiver
+        where id = #{id}
+    </select>
+
+    <sql id="page_where">
+        <trim prefix="where" prefixOverrides="and | or ">
+            <if test="receiveUserId != null and receiveUserId != ''">and receive_user_id = #{receiveUserId}</if>
+            <if test="receiveOrgId != null and receiveOrgId != ''">and receive_org_id = #{receiveOrgId}</if>
+            <if test="receiveRoleId != null and receiveRoleId != ''">and receive_role_id = #{receiveRoleId}</if>
+            <if test="readFlag != null and readFlag != ''">and read_flag = #{readFlag}</if>
+        </trim>
+    </sql>
+
+    <select id="findAll" resultMap="sysMessageReceiverResultMap"
+            parameterType="com.yxd.rabbitmq.model.entity.SysMessageReceiver">
+        select
+        <include refid="table_columns"/>
+        from sys_message_receiver
+        <include refid="page_where"/>
+    </select>
+
+    <!-- 其他自定义SQL -->
+
+    <update id="updateReadFlag">
+        UPDATE SYS_MESSAGE_RECEIVER smr
+        SET SMR.READ_FLAG = '1'
+        WHERE
+        SMR.MESSAGE_ID = #{messageId}
+        AND SMR.RECEIVE_ORG_ID = #{receiveOrgId}
+        AND SMR.RECEIVE_ROLE_ID IN
+        <foreach item="roleId" collection="roleIdArr" open="(" separator="," close=")">
+            '${roleId}'
+        </foreach>
+    </update>
+</mapper>
